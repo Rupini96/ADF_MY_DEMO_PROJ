@@ -1167,6 +1167,44 @@
 														}
 													}
 												]
+											},
+											{
+												"name": "InsertLoadLogs",
+												"type": "Lookup",
+												"dependsOn": [
+													{
+														"activity": "Copy_Full_Load",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "AzureDatabricksDeltaLakeSource",
+														"query": {
+															"value": "@concat('insert into audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values (','''',item().source_system,''',''',item().target_table,''',''',activity('Copy_Full_Load').output.rowscopied,''',''',item().watermark_column,''',''',utcNow(),''')')",
+															"type": "Expression"
+														}
+													},
+													"dataset": {
+														"referenceName": "ds_deltalaketable_databricks",
+														"type": "DatasetReference",
+														"parameters": {
+															"schema_name": "'aa'",
+															"table_name": "'aa'"
+														}
+													},
+													"firstRowOnly": false
+												}
 											}
 										]
 									}
