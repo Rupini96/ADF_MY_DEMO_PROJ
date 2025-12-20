@@ -1,0 +1,29 @@
+{
+	"name": "Dynamic_azure_sql_db",
+	"properties": {
+		"parameters": {
+			"database_name": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "dbserversai.database.windows.net",
+			"database": "@{linkedService().database_name}",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "rupsadmin",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "AzureKeyVault1",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "azure-sqldb-password",
+				"secretVersion": "b1bac6d67c9e4ac7982071655a425095"
+			}
+		}
+	}
+}
