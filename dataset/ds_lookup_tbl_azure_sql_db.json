@@ -1,5 +1,5 @@
 {
-	"name": "lookup_tbl_azure_sql_db",
+	"name": "ds_lookup_tbl_azure_sql_db",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "project_db_config",

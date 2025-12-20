@@ -21,7 +21,7 @@
 						"partitionOption": "None"
 					},
 					"dataset": {
-						"referenceName": "lookup_tbl_azure_sql_db",
+						"referenceName": "ds_lookup_tbl_azure_sql_db",
 						"type": "DatasetReference",
 						"parameters": {
 							"schema_name": "dbo",
@@ -63,6 +63,55 @@
 									"value": "@and(equals(item().load_type,'FULL'),equals(item().is_active,'Y'))",
 									"type": "Expression"
 								},
+								"ifFalseActivities": [
+									{
+										"name": "Fetch_max_log",
+										"type": "Lookup",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "AzureDatabricksDeltaLakeSource",
+												"query": {
+													"value": "@concat('select coalesce(cast(max(load_date) as date),''','1900-01-01',''') as last_fetched_date from audit.load_logs where source_system = ''',item().source_system, ''' and tablename=''',item().target_table,'''')",
+													"type": "Expression"
+												}
+											},
+											"dataset": {
+												"referenceName": "ds_deltalaketable_databricks",
+												"type": "DatasetReference",
+												"parameters": {
+													"schema_name": "audit",
+													"table_name": "load_log"
+												}
+											},
+											"firstRowOnly": false
+										}
+									},
+									{
+										"name": "Copy data1",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"enableStaging": false
+										}
+									}
+								],
 								"ifTrueActivities": [
 									{
 										"name": "Copy_Full_Load",
@@ -99,66 +148,11 @@
 													"type": "LinkedServiceReference"
 												},
 												"path": "landing/adf_staging"
-											},
-											"translator": {
-												"type": "TabularTranslator",
-												"mappings": [
-													{
-														"source": {
-															"name": "policy_id",
-															"type": "Int32"
-														},
-														"sink": {
-															"name": "policy_id",
-															"type": "Int32"
-														}
-													},
-													{
-														"source": {
-															"name": "policy_number",
-															"type": "String"
-														},
-														"sink": {
-															"name": "policy_number",
-															"type": "String"
-														}
-													},
-													{
-														"source": {
-															"name": "policy_type",
-															"type": "String"
-														},
-														"sink": {
-															"name": "policy_type",
-															"type": "String"
-														}
-													},
-													{
-														"source": {
-															"name": "last_modified_date",
-															"type": "DateTime"
-														},
-														"sink": {
-															"name": "last_modified_date",
-															"type": "DateTime"
-														}
-													},
-													{
-														"source": {
-															"name": "target_inserted_date",
-															"type": "String"
-														},
-														"sink": {
-															"name": "target_inserted_date",
-															"type": "DateTime"
-														}
-													}
-												]
 											}
 										},
 										"inputs": [
 											{
-												"referenceName": "lookup_tbl_azure_sql_db",
+												"referenceName": "ds_lookup_tbl_azure_sql_db",
 												"type": "DatasetReference",
 												"parameters": {
 													"schema_name": {
