@@ -92,7 +92,14 @@
 													"type": "AzureDatabricksDeltaLakeImportCommand"
 												}
 											},
-											"enableStaging": false,
+											"enableStaging": true,
+											"stagingSettings": {
+												"linkedServiceName": {
+													"referenceName": "ADLSAnshAdv",
+													"type": "LinkedServiceReference"
+												},
+												"path": "landing/adf_staging"
+											},
 											"translator": {
 												"type": "TabularTranslator",
 												"mappings": [
