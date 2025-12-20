@@ -224,6 +224,31 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/LS_AzureDatabricksDeltaLake')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLake",
+				"typeProperties": {
+					"domain": "https://adb-1650017884830720.0.azuredatabricks.net/",
+					"clusterId": "1214-190847-59i9toyj",
+					"accessToken": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault1",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "Databricks-access-token",
+						"secretVersion": "dab445416c6c4dd2ae4aa46e161b5ac8"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/project_db_config')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -305,6 +330,41 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/ADLSAnshAdv')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_deltalaketable_databricks')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AzureDatabricksDeltaLake",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"schema_name": {
+						"type": "string"
+					},
+					"table_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLakeDataset",
+				"typeProperties": {
+					"database": {
+						"value": "@dataset().schema_name",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().table_name",
+						"type": "Expression"
+					}
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_AzureDatabricksDeltaLake')]"
 			]
 		},
 		{
@@ -949,6 +1009,170 @@
 							},
 							"firstRowOnly": false
 						}
+					},
+					{
+						"name": "ForEachTable",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LookupIngestConfigTable",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LookupIngestConfigTable').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "If Condition1",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@and(equals(item().load_type,'FULL'),equals(item().is_active,'Y'))",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "Copy_Full_Load",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "AzureSqlSource",
+														"sqlReaderQuery": {
+															"value": "@concat('select *,''',utcNow(),'''as target_inserted_date from ',item().source_table)",
+															"type": "Expression"
+														},
+														"queryTimeout": "02:00:00",
+														"partitionOption": "None"
+													},
+													"sink": {
+														"type": "AzureDatabricksDeltaLakeSink",
+														"importSettings": {
+															"type": "AzureDatabricksDeltaLakeImportCommand"
+														}
+													},
+													"enableStaging": true,
+													"stagingSettings": {
+														"linkedServiceName": {
+															"referenceName": "ADLSAnshAdv",
+															"type": "LinkedServiceReference"
+														},
+														"path": "landing/adf_staging"
+													},
+													"translator": {
+														"type": "TabularTranslator",
+														"mappings": [
+															{
+																"source": {
+																	"name": "policy_id",
+																	"type": "Int32"
+																},
+																"sink": {
+																	"name": "policy_id",
+																	"type": "Int32"
+																}
+															},
+															{
+																"source": {
+																	"name": "policy_number",
+																	"type": "String"
+																},
+																"sink": {
+																	"name": "policy_number",
+																	"type": "String"
+																}
+															},
+															{
+																"source": {
+																	"name": "policy_type",
+																	"type": "String"
+																},
+																"sink": {
+																	"name": "policy_type",
+																	"type": "String"
+																}
+															},
+															{
+																"source": {
+																	"name": "last_modified_date",
+																	"type": "DateTime"
+																},
+																"sink": {
+																	"name": "last_modified_date",
+																	"type": "DateTime"
+																}
+															},
+															{
+																"source": {
+																	"name": "target_inserted_date",
+																	"type": "String"
+																},
+																"sink": {
+																	"name": "target_inserted_date",
+																	"type": "DateTime"
+																}
+															}
+														]
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "lookup_tbl_azure_sql_db",
+														"type": "DatasetReference",
+														"parameters": {
+															"schema_name": {
+																"value": "@split(item().source_table,'.')[0]",
+																"type": "Expression"
+															},
+															"table_name": {
+																"value": "@split(item().source_table,'.')[1]",
+																"type": "Expression"
+															},
+															"database_name": {
+																"value": "@item().database",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "ds_deltalaketable_databricks",
+														"type": "DatasetReference",
+														"parameters": {
+															"schema_name": {
+																"value": "@split(item().target_table,'.')[0]",
+																"type": "Expression"
+															},
+															"table_name": {
+																"value": "@split(item().target_table,'.')[1]",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											}
+										]
+									}
+								}
+							]
+						}
 					}
 				],
 				"policy": {
@@ -957,7 +1181,9 @@
 				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/lookup_tbl_azure_sql_db')]"
+				"[concat(variables('factoryId'), '/datasets/lookup_tbl_azure_sql_db')]",
+				"[concat(variables('factoryId'), '/datasets/ds_deltalaketable_databricks')]",
+				"[concat(variables('factoryId'), '/linkedServices/ADLSAnshAdv')]"
 			]
 		},
 		{
