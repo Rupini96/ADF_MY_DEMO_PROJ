@@ -1,0 +1,20 @@
+{
+	"name": "lookup_tbl_azure_sql_db",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "project_db_config",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"schema_name": {
+				"type": "string"
+			},
+			"table_name": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": []
+	}
+}
