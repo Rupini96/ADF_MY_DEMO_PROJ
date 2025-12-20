@@ -7,10 +7,6 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "AnshAdventureADF"
 		},
-		"project_db_config_password": {
-			"type": "secureString",
-			"metadata": "Secure string for 'password' of 'project_db_config'"
-		},
 		"ADLSAnshAdv_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://anshadventure.dfs.core.windows.net/"
@@ -23,6 +19,18 @@
 			"type": "string",
 			"defaultValue": "https://rupsprojectKV.vault.azure.net/"
 		},
+		"Dynamic_azure_sql_db_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "dbserversai.database.windows.net"
+		},
+		"Dynamic_azure_sql_db_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "@{linkedService().database_name}"
+		},
+		"Dynamic_azure_sql_db_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "rupsadmin"
+		},
 		"HTTPAnshAdv_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://raw.githubusercontent.com"
@@ -33,7 +41,7 @@
 		},
 		"project_db_config_properties_typeProperties_database": {
 			"type": "string",
-			"defaultValue": "Project"
+			"defaultValue": "@{linkedService().database_name}"
 		},
 		"project_db_config_properties_typeProperties_userName": {
 			"type": "string",
@@ -601,6 +609,55 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/Ingestion_sqldb_to_deltatbl')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LookupIngestConfigTable",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "lookup_tbl_azure_sql_db",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema_name": "dbo",
+									"table_name": "ingest_config_tbl",
+									"database_name": {
+										"value": "project",
+										"type": "Expression"
+									}
+								}
+							},
+							"firstRowOnly": false
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/lookup_tbl_azure_sql_db')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Azure_sqldb_job_config_table')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -793,6 +850,50 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/lookup_tbl_azure_sql_db')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "project_db_config",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"database_name": {
+							"value": "@dataset().database_name",
+							"type": "Expression"
+						}
+					}
+				},
+				"parameters": {
+					"schema_name": {
+						"type": "string"
+					},
+					"table_name": {
+						"type": "string"
+					},
+					"database_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().schema_name",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().table_name",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/project_db_config')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/ADLSAnshAdv')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -853,6 +954,40 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/Dynamic_azure_sql_db')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"database_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('Dynamic_azure_sql_db_properties_typeProperties_server')]",
+					"database": "[parameters('Dynamic_azure_sql_db_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('Dynamic_azure_sql_db_properties_typeProperties_userName')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault1",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "azure-sqldb-password",
+						"secretVersion": "b1bac6d67c9e4ac7982071655a425095"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/HTTPAnshAdv')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -872,6 +1007,11 @@
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"parameters": {
+					"database_name": {
+						"type": "string"
+					}
+				},
 				"annotations": [],
 				"type": "AzureSqlDatabase",
 				"typeProperties": {
@@ -882,12 +1022,19 @@
 					"authenticationType": "SQL",
 					"userName": "[parameters('project_db_config_properties_typeProperties_userName')]",
 					"password": {
-						"type": "SecureString",
-						"value": "[parameters('project_db_config_password')]"
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault1",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "azure-sqldb-password",
+						"secretVersion": "b1bac6d67c9e4ac7982071655a425095"
 					}
 				}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault1')]"
+			]
 		}
 	]
 }

@@ -5,9 +5,6 @@
 		"factoryName": {
 			"value": "AnshAdventureADF"
 		},
-		"project_db_config_password": {
-			"value": ""
-		},
 		"ADLSAnshAdv_properties_typeProperties_url": {
 			"value": "https://anshadventure.dfs.core.windows.net/"
 		},
@@ -17,6 +14,15 @@
 		"AzureKeyVault1_properties_typeProperties_baseUrl": {
 			"value": "https://rupsprojectKV.vault.azure.net/"
 		},
+		"Dynamic_azure_sql_db_properties_typeProperties_server": {
+			"value": "dbserversai.database.windows.net"
+		},
+		"Dynamic_azure_sql_db_properties_typeProperties_database": {
+			"value": "@{linkedService().database_name}"
+		},
+		"Dynamic_azure_sql_db_properties_typeProperties_userName": {
+			"value": "rupsadmin"
+		},
 		"HTTPAnshAdv_properties_typeProperties_url": {
 			"value": "https://raw.githubusercontent.com"
 		},
@@ -24,7 +30,7 @@
 			"value": "dbserversai.database.windows.net"
 		},
 		"project_db_config_properties_typeProperties_database": {
-			"value": "Project"
+			"value": "@{linkedService().database_name}"
 		},
 		"project_db_config_properties_typeProperties_userName": {
 			"value": "rupsadmin"
