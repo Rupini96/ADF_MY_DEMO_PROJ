@@ -80,7 +80,7 @@
 											"source": {
 												"type": "AzureSqlSource",
 												"sqlReaderQuery": {
-													"value": "@concat('select *,''',utcNow(),'''as target_inserted_date from',item().source_table)",
+													"value": "@concat('select *,''',utcNow(),'''as target_inserted_date from ',item().source_table)",
 													"type": "Expression"
 												},
 												"queryTimeout": "02:00:00",
@@ -92,7 +92,62 @@
 													"type": "AzureDatabricksDeltaLakeImportCommand"
 												}
 											},
-											"enableStaging": false
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"mappings": [
+													{
+														"source": {
+															"name": "policy_id",
+															"type": "Int32"
+														},
+														"sink": {
+															"name": "policy_id",
+															"type": "Int32"
+														}
+													},
+													{
+														"source": {
+															"name": "policy_number",
+															"type": "String"
+														},
+														"sink": {
+															"name": "policy_number",
+															"type": "String"
+														}
+													},
+													{
+														"source": {
+															"name": "policy_type",
+															"type": "String"
+														},
+														"sink": {
+															"name": "policy_type",
+															"type": "String"
+														}
+													},
+													{
+														"source": {
+															"name": "last_modified_date",
+															"type": "DateTime"
+														},
+														"sink": {
+															"name": "last_modified_date",
+															"type": "DateTime"
+														}
+													},
+													{
+														"source": {
+															"name": "target_inserted_date",
+															"type": "String"
+														},
+														"sink": {
+															"name": "target_inserted_date",
+															"type": "DateTime"
+														}
+													}
+												]
+											}
 										},
 										"inputs": [
 											{
@@ -108,7 +163,7 @@
 														"type": "Expression"
 													},
 													"database_name": {
-														"value": "item().database",
+														"value": "@item().database",
 														"type": "Expression"
 													}
 												}
