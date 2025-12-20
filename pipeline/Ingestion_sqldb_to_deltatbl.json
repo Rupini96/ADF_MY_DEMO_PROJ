@@ -22,7 +22,15 @@
 					},
 					"dataset": {
 						"referenceName": "lookup_tbl_azure_sql_db",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"schema_name": "dbo",
+							"table_name": "ingest_config_tbl",
+							"database_name": {
+								"value": "project",
+								"type": "Expression"
+							}
+						}
 					},
 					"firstRowOnly": false
 				}
