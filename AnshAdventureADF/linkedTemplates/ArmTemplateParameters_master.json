@@ -1,0 +1,39 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "AnshAdventureADF"
+		},
+		"project_db_config_password": {
+			"value": ""
+		},
+		"ADLSAnshAdv_properties_typeProperties_url": {
+			"value": "https://anshadventure.dfs.core.windows.net/"
+		},
+		"AzureDatabricks_properties_typeProperties_existingClusterId": {
+			"value": "1214-190847-59i9toyj"
+		},
+		"AzureKeyVault1_properties_typeProperties_baseUrl": {
+			"value": "https://rupsprojectKV.vault.azure.net/"
+		},
+		"HTTPAnshAdv_properties_typeProperties_url": {
+			"value": "https://raw.githubusercontent.com"
+		},
+		"project_db_config_properties_typeProperties_server": {
+			"value": "dbserversai.database.windows.net"
+		},
+		"project_db_config_properties_typeProperties_database": {
+			"value": "Project"
+		},
+		"project_db_config_properties_typeProperties_userName": {
+			"value": "rupsadmin"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
