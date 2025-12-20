@@ -1,0 +1,9 @@
+{
+	"name": "AnshAdventureADF",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "95dc0867-0d81-46ed-9a5c-486a8bd52978",
+		"tenantId": "17b3217a-d933-4f71-b11a-c47084a75210"
+	}
+}
