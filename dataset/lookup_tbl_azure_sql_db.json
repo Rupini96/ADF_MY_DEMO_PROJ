@@ -3,13 +3,22 @@
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "project_db_config",
-			"type": "LinkedServiceReference"
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"database_name": {
+					"value": "@dataset().database_name",
+					"type": "Expression"
+				}
+			}
 		},
 		"parameters": {
 			"schema_name": {
 				"type": "string"
 			},
 			"table_name": {
+				"type": "string"
+			},
+			"database_name": {
 				"type": "string"
 			}
 		},
