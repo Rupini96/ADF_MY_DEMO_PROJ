@@ -23,7 +23,8 @@
 					"dataset": {
 						"referenceName": "lookup_tbl_azure_sql_db",
 						"type": "DatasetReference"
-					}
+					},
+					"firstRowOnly": false
 				}
 			}
 		],
