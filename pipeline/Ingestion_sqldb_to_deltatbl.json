@@ -117,7 +117,17 @@
 										"outputs": [
 											{
 												"referenceName": "ds_deltalaketable_databricks",
-												"type": "DatasetReference"
+												"type": "DatasetReference",
+												"parameters": {
+													"schema_name": {
+														"value": "@split(item().target_table,'.')[0]",
+														"type": "Expression"
+													},
+													"table_name": {
+														"value": "@split(item().target_table,'.')[1]",
+														"type": "Expression"
+													}
+												}
 											}
 										]
 									}
