@@ -92,7 +92,7 @@
 													"table_name": "load_log"
 												}
 											},
-											"firstRowOnly": false
+											"firstRowOnly": true
 										}
 									},
 									{
@@ -175,6 +175,44 @@
 												}
 											}
 										]
+									},
+									{
+										"name": "Insert_load_logs",
+										"type": "Lookup",
+										"dependsOn": [
+											{
+												"activity": "Incremental_copy_data",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "AzureDatabricksDeltaLakeSource",
+												"query": {
+													"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{item().source_system}','@{item().target_table}',@{activity('Incremental_copy_data').output.numberofrowscopied},'@{item().watermarkcolumnname}',utcNow())",
+													"type": "Expression"
+												}
+											},
+											"dataset": {
+												"referenceName": "ds_deltalaketable_databricks",
+												"type": "DatasetReference",
+												"parameters": {
+													"schema_name": "audit",
+													"table_name": "load_logs"
+												}
+											},
+											"firstRowOnly": false
+										}
 									}
 								],
 								"ifTrueActivities": [
