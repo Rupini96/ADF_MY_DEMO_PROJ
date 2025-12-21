@@ -177,7 +177,7 @@
 										]
 									},
 									{
-										"name": "Insert_load_logs",
+										"name": "Insert_INC_load_logs",
 										"type": "Lookup",
 										"dependsOn": [
 											{
@@ -291,7 +291,7 @@
 										]
 									},
 									{
-										"name": "InsertLoadLogs",
+										"name": "InsertFullLoadLogs",
 										"type": "Lookup",
 										"dependsOn": [
 											{
