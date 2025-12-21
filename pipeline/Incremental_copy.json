@@ -56,11 +56,11 @@
 									"type": "DatasetReference",
 									"parameters": {
 										"schema_name": {
-											"value": "@split(pipeline().parameters.source_schema_name,'.')[0]",
+											"value": "@pipeline().parameters.source_schema_name",
 											"type": "Expression"
 										},
 										"table_name": {
-											"value": "@split(pipeline().parameters.source_table_name,'.')[1]",
+											"value": "@pipeline().parameters.source_table_name",
 											"type": "Expression"
 										},
 										"database_name": {
