@@ -11,7 +11,121 @@
 					"expression": {
 						"value": "@greater(pipeline().parameters.totalCount,0)",
 						"type": "Expression"
-					}
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Incremental_copy_data",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "select * , '@{utcNow()}' as target_inserted_date from @{pipeline().parameters.source_table_name} where @{pipeline().parameters.watermark_column_name} >= '@{if(empty(pipeline().parameters.Back_Fill_date),pipeline().parameters.last_fetched_date,pipeline().parameters.Back_Fill_date)}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureDatabricksDeltaLakeSink",
+									"importSettings": {
+										"type": "AzureDatabricksDeltaLakeImportCommand"
+									}
+								},
+								"enableStaging": true,
+								"stagingSettings": {
+									"linkedServiceName": {
+										"referenceName": "ADLSAnshAdv",
+										"type": "LinkedServiceReference"
+									},
+									"path": "landing/adf_staging"
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_lookup_tbl_azure_sql_db",
+									"type": "DatasetReference",
+									"parameters": {
+										"schema_name": {
+											"value": "@split(pipeline().parameters.source_schema_name,'.')[0]",
+											"type": "Expression"
+										},
+										"table_name": {
+											"value": "@split(pipeline().parameters.source_table_name,'.')[1]",
+											"type": "Expression"
+										},
+										"database_name": {
+											"value": "@pipeline().parameters.database_name",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_deltalaketable_databricks",
+									"type": "DatasetReference",
+									"parameters": {
+										"schema_name": {
+											"value": "@pipeline().parameters.target_schema_name",
+											"type": "Expression"
+										},
+										"table_name": {
+											"value": "@pipeline().parameters.target_table_name",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Insert_INC_load_logs",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "Incremental_copy_data",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureDatabricksDeltaLakeSource",
+									"query": {
+										"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{pipeline().parameters.source_system}','@{pipeline().parameters.target_table_name}',@{activity('Incremental_copy_data').output.rowsCopied},'@{pipeline().parameters.watermark_column_name}', '@{utcNow()}')",
+										"type": "Expression"
+									}
+								},
+								"dataset": {
+									"referenceName": "ds_deltalaketable_databricks",
+									"type": "DatasetReference",
+									"parameters": {
+										"schema_name": "audit",
+										"table_name": "load_logs"
+									}
+								},
+								"firstRowOnly": false
+							}
+						}
+					]
 				}
 			}
 		],
@@ -19,6 +133,33 @@
 			"totalCount": {
 				"type": "int",
 				"defaultValue": 0
+			},
+			"database_name": {
+				"type": "string"
+			},
+			"source_schema_name": {
+				"type": "string"
+			},
+			"source_table_name": {
+				"type": "string"
+			},
+			"target_schema_name": {
+				"type": "string"
+			},
+			"target_table_name": {
+				"type": "string"
+			},
+			"Back_Fill_date": {
+				"type": "string"
+			},
+			"watermark_column_name": {
+				"type": "string"
+			},
+			"last_fetched_date": {
+				"type": "string"
+			},
+			"source_system": {
+				"type": "string"
 			}
 		},
 		"annotations": []
