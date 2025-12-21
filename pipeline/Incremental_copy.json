@@ -1,0 +1,26 @@
+{
+	"name": "Incremental_copy",
+	"properties": {
+		"activities": [
+			{
+				"name": "IF_DATA_AVIALABLE_INC_LOAD",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@greater(pipeline().parameters.totalCount,0)",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"totalCount": {
+				"type": "int",
+				"defaultValue": 0
+			}
+		},
+		"annotations": []
+	}
+}

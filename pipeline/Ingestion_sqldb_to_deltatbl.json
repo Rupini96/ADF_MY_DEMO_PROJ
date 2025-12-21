@@ -96,11 +96,115 @@
 										}
 									},
 									{
+										"name": "Insert_INC_load_logs",
+										"type": "Lookup",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "AzureDatabricksDeltaLakeSource",
+												"query": {
+													"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{item().source_system}','@{item().target_table}',@{activity('Incremental_copy_data').output.rowsCopied},'@{item().watermark_column}', '@{utcNow()}')",
+													"type": "Expression"
+												}
+											},
+											"dataset": {
+												"referenceName": "ds_deltalaketable_databricks",
+												"type": "DatasetReference",
+												"parameters": {
+													"schema_name": "audit",
+													"table_name": "load_logs"
+												}
+											},
+											"firstRowOnly": false
+										}
+									},
+									{
+										"name": "TotalCount",
+										"type": "Script",
+										"dependsOn": [
+											{
+												"activity": "Fetch_max_log",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"linkedServiceName": {
+											"referenceName": "Dynamic_azure_sql_db",
+											"type": "LinkedServiceReference",
+											"parameters": {
+												"database_name": {
+													"value": "@item().database",
+													"type": "Expression"
+												}
+											}
+										},
+										"typeProperties": {
+											"scripts": [
+												{
+													"type": "Query",
+													"text": {
+														"value": "select count(*) as total_count from @{item().source_table} where @{item().watermark_column} >= '@{if(empty(pipeline().parameters.BackFillDate),activity('Fetch_max_log').output.firstRow.last_fetched_date,pipeline().parameters.BackFillDate)}'",
+														"type": "Expression"
+													}
+												}
+											],
+											"scriptBlockExecutionTimeout": "02:00:00"
+										}
+									},
+									{
+										"name": "Execute Pipeline1",
+										"type": "ExecutePipeline",
+										"state": "Inactive",
+										"onInactiveMarkAs": "Succeeded",
+										"dependsOn": [
+											{
+												"activity": "TotalCount",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"pipeline": {
+												"referenceName": "Incremental_copy",
+												"type": "PipelineReference"
+											},
+											"waitOnCompletion": true,
+											"parameters": {
+												"totalCount": {
+													"value": "@activity('TotalCount').output.resultSets[0].row[0].total_count",
+													"type": "Expression"
+												}
+											}
+										}
+									},
+									{
 										"name": "Incremental_copy_data",
 										"type": "Copy",
 										"dependsOn": [
 											{
-												"activity": "Fetch_max_log",
+												"activity": "TotalCount",
 												"dependencyConditions": [
 													"Succeeded"
 												]
@@ -175,44 +279,6 @@
 												}
 											}
 										]
-									},
-									{
-										"name": "Insert_INC_load_logs",
-										"type": "Lookup",
-										"dependsOn": [
-											{
-												"activity": "Incremental_copy_data",
-												"dependencyConditions": [
-													"Succeeded"
-												]
-											}
-										],
-										"policy": {
-											"timeout": "0.12:00:00",
-											"retry": 0,
-											"retryIntervalInSeconds": 30,
-											"secureOutput": false,
-											"secureInput": false
-										},
-										"userProperties": [],
-										"typeProperties": {
-											"source": {
-												"type": "AzureDatabricksDeltaLakeSource",
-												"query": {
-													"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{item().source_system}','@{item().target_table}',@{activity('Incremental_copy_data').output.rowsCopied},'@{item().watermark_column}', '@{utcNow()}')",
-													"type": "Expression"
-												}
-											},
-											"dataset": {
-												"referenceName": "ds_deltalaketable_databricks",
-												"type": "DatasetReference",
-												"parameters": {
-													"schema_name": "audit",
-													"table_name": "load_logs"
-												}
-											},
-											"firstRowOnly": false
-										}
 									}
 								],
 								"ifTrueActivities": [
