@@ -193,7 +193,7 @@
 											"waitOnCompletion": true,
 											"parameters": {
 												"totalCount": {
-													"value": "@activity('TotalCount').output.resultSets[0].row[0].total_count",
+													"value": "@activity('TotalCount').output.resultSets[0].rows[0].total_count",
 													"type": "Expression"
 												},
 												"database_name": {
