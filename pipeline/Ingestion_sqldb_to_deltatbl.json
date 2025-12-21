@@ -98,14 +98,9 @@
 									{
 										"name": "Insert_INC_load_logs",
 										"type": "Lookup",
-										"dependsOn": [
-											{
-												"activity": "Incremental_copy_data",
-												"dependencyConditions": [
-													"Succeeded"
-												]
-											}
-										],
+										"state": "Inactive",
+										"onInactiveMarkAs": "Succeeded",
+										"dependsOn": [],
 										"policy": {
 											"timeout": "0.12:00:00",
 											"retry": 0,
@@ -178,8 +173,6 @@
 									{
 										"name": "Execute Pipeline1",
 										"type": "ExecutePipeline",
-										"state": "Inactive",
-										"onInactiveMarkAs": "Succeeded",
 										"dependsOn": [
 											{
 												"activity": "TotalCount",
@@ -202,6 +195,42 @@
 												"totalCount": {
 													"value": "@activity('TotalCount').output.resultSets[0].row[0].total_count",
 													"type": "Expression"
+												},
+												"database_name": {
+													"value": "@item().database",
+													"type": "Expression"
+												},
+												"source_schema_name": {
+													"value": "@split(item().source_table,'.')[0]",
+													"type": "Expression"
+												},
+												"source_table_name": {
+													"value": "@split(item().source_table,'.')[1]",
+													"type": "Expression"
+												},
+												"target_schema_name": {
+													"value": "@split(item().target_table,'.')[0]",
+													"type": "Expression"
+												},
+												"target_table_name": {
+													"value": "@split(item().target_table,'.')[1]",
+													"type": "Expression"
+												},
+												"Back_Fill_date": {
+													"value": "@pipeline().parameters.BackFillDate",
+													"type": "Expression"
+												},
+												"watermark_column_name": {
+													"value": "@item().watermark_column",
+													"type": "Expression"
+												},
+												"last_fetched_date": {
+													"value": "@activity('Fetch_max_log').output.firstRow.last_fetched_date",
+													"type": "Expression"
+												},
+												"source_system": {
+													"value": "@item().source_system",
+													"type": "Expression"
 												}
 											}
 										}
@@ -209,14 +238,9 @@
 									{
 										"name": "Incremental_copy_data",
 										"type": "Copy",
-										"dependsOn": [
-											{
-												"activity": "TotalCount",
-												"dependencyConditions": [
-													"Succeeded"
-												]
-											}
-										],
+										"state": "Inactive",
+										"onInactiveMarkAs": "Succeeded",
+										"dependsOn": [],
 										"policy": {
 											"timeout": "0.12:00:00",
 											"retry": 0,
