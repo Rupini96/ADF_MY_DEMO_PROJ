@@ -811,7 +811,7 @@
 													"source": {
 														"type": "AzureDatabricksDeltaLakeSource",
 														"query": {
-															"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{item().source_system}','@{item().target_table}',@{activity('Incremental_copy_data').output.rowsCopied},'@{item().watermark_column}',utcNow())",
+															"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{item().source_system}','@{item().target_table}',@{activity('Incremental_copy_data').output.rowsCopied},'@{item().watermark_column}', '@{utcNow()}')",
 															"type": "Expression"
 														}
 													},
