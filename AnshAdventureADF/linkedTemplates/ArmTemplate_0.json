@@ -1093,7 +1093,7 @@
 													"source": {
 														"type": "AzureSqlSource",
 														"sqlReaderQuery": {
-															"value": "select * , utcNow() as target_inserted_date from @{item().source_table} where @{item().watermark_column} > '@{if(empty(pipeline().parameters.BackFillDate),activity('Fetch_max_log').output.firstRow.last_fetched_date,pipeline().parameters.BackFillDate)}'",
+															"value": "select * , '@{utcNow()}' as target_inserted_date from @{item().source_table} where @{item().watermark_column} > '@{if(empty(pipeline().parameters.BackFillDate),activity('Fetch_max_log').output.firstRow.last_fetched_date,pipeline().parameters.BackFillDate)}'",
 															"type": "Expression"
 														},
 														"queryTimeout": "02:00:00",
@@ -1152,7 +1152,7 @@
 												]
 											},
 											{
-												"name": "Insert_load_logs",
+												"name": "Insert_INC_load_logs",
 												"type": "Lookup",
 												"dependsOn": [
 													{
@@ -1174,7 +1174,7 @@
 													"source": {
 														"type": "AzureDatabricksDeltaLakeSource",
 														"query": {
-															"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{item().source_system}','@{item().target_table}',@{activity('Incremental_copy_data').output.numberofrowscopied},'@{item().watermarkcolumnname}',utcNow())",
+															"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{item().source_system}','@{item().target_table}',@{activity('Incremental_copy_data').output.rowsCopied},'@{item().watermarkcolumnname}',utcNow())",
 															"type": "Expression"
 														}
 													},
@@ -1266,7 +1266,7 @@
 												]
 											},
 											{
-												"name": "InsertLoadLogs",
+												"name": "InsertFullLoadLogs",
 												"type": "Lookup",
 												"dependsOn": [
 													{
