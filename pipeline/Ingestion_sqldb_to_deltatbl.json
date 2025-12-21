@@ -118,7 +118,7 @@
 											"source": {
 												"type": "AzureSqlSource",
 												"sqlReaderQuery": {
-													"value": "select * , @{utcNow()} as target_inserted_date from @{item().source_table} where @{item().watermark_column} > '@{if(empty(pipeline().parameters.BackFillDate),activity('Fetch_max_log').output.firstRow.last_fetched_date,pipeline().parameters.BackFillDate)}'",
+													"value": "select * , '@{utcNow()}' as target_inserted_date from @{item().source_table} where @{item().watermark_column} > '@{if(empty(pipeline().parameters.BackFillDate),activity('Fetch_max_log').output.firstRow.last_fetched_date,pipeline().parameters.BackFillDate)}'",
 													"type": "Expression"
 												},
 												"queryTimeout": "02:00:00",
