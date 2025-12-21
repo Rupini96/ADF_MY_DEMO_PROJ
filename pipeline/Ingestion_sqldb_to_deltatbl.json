@@ -98,7 +98,14 @@
 									{
 										"name": "Insert_INC_load_logs",
 										"type": "Lookup",
-										"dependsOn": [],
+										"dependsOn": [
+											{
+												"activity": "Incremental_copy_data",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
 										"policy": {
 											"timeout": "0.12:00:00",
 											"retry": 0,
