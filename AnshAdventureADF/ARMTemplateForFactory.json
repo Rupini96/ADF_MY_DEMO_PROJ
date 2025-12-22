@@ -609,6 +609,186 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/Incremental_copy')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "IF_DATA_AVIALABLE_INC_LOAD",
+						"type": "IfCondition",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@greater(pipeline().parameters.totalCount,0)",
+								"type": "Expression"
+							},
+							"ifTrueActivities": [
+								{
+									"name": "Incremental_copy_data",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "select * , '@{utcNow()}' as target_inserted_date from @{pipeline().parameters.source_table_name} where @{pipeline().parameters.watermark_column_name} >= '@{if(empty(pipeline().parameters.Back_Fill_date),pipeline().parameters.last_fetched_date,pipeline().parameters.Back_Fill_date)}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "AzureDatabricksDeltaLakeSink",
+											"importSettings": {
+												"type": "AzureDatabricksDeltaLakeImportCommand"
+											}
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "ADLSAnshAdv",
+												"type": "LinkedServiceReference"
+											},
+											"path": "landing/adf_staging"
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_lookup_tbl_azure_sql_db",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema_name": {
+													"value": "@pipeline().parameters.source_schema_name",
+													"type": "Expression"
+												},
+												"table_name": {
+													"value": "@pipeline().parameters.source_table_name",
+													"type": "Expression"
+												},
+												"database_name": {
+													"value": "@pipeline().parameters.database_name",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_deltalaketable_databricks",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema_name": {
+													"value": "@pipeline().parameters.target_schema_name",
+													"type": "Expression"
+												},
+												"table_name": {
+													"value": "@pipeline().parameters.target_table_name",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "Insert_INC_load_logs",
+									"type": "Lookup",
+									"dependsOn": [
+										{
+											"activity": "Incremental_copy_data",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureDatabricksDeltaLakeSource",
+											"query": {
+												"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{pipeline().parameters.source_system}','@{pipeline().parameters.target_insert_logs}',@{activity('Incremental_copy_data').output.rowsCopied},'@{pipeline().parameters.watermark_column_name}', '@{utcNow()}')",
+												"type": "Expression"
+											}
+										},
+										"dataset": {
+											"referenceName": "ds_deltalaketable_databricks",
+											"type": "DatasetReference",
+											"parameters": {
+												"schema_name": "audit",
+												"table_name": "load_logs"
+											}
+										},
+										"firstRowOnly": false
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"totalCount": {
+						"type": "int",
+						"defaultValue": 0
+					},
+					"database_name": {
+						"type": "string"
+					},
+					"source_schema_name": {
+						"type": "string"
+					},
+					"source_table_name": {
+						"type": "string"
+					},
+					"target_schema_name": {
+						"type": "string"
+					},
+					"target_table_name": {
+						"type": "string"
+					},
+					"Back_Fill_date": {
+						"type": "string"
+					},
+					"watermark_column_name": {
+						"type": "string"
+					},
+					"last_fetched_date": {
+						"type": "string"
+					},
+					"source_system": {
+						"type": "string"
+					},
+					"target_insert_logs": {
+						"type": "string"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_lookup_tbl_azure_sql_db')]",
+				"[concat(variables('factoryId'), '/datasets/ds_deltalaketable_databricks')]",
+				"[concat(variables('factoryId'), '/linkedServices/ADLSAnshAdv')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Ingestion_sqldb_to_deltatbl')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -842,6 +1022,10 @@
 														},
 														"source_system": {
 															"value": "@item().source_system",
+															"type": "Expression"
+														},
+														"target_insert_logs": {
+															"value": "@item().target_table",
 															"type": "Expression"
 														}
 													}
@@ -1499,183 +1683,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault1')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/Incremental_copy')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "IF_DATA_AVIALABLE_INC_LOAD",
-						"type": "IfCondition",
-						"dependsOn": [],
-						"userProperties": [],
-						"typeProperties": {
-							"expression": {
-								"value": "@greater(pipeline().parameters.totalCount,0)",
-								"type": "Expression"
-							},
-							"ifTrueActivities": [
-								{
-									"name": "Incremental_copy_data",
-									"type": "Copy",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"source": {
-											"type": "AzureSqlSource",
-											"sqlReaderQuery": {
-												"value": "select * , '@{utcNow()}' as target_inserted_date from @{pipeline().parameters.source_table_name} where @{pipeline().parameters.watermark_column_name} >= '@{if(empty(pipeline().parameters.Back_Fill_date),pipeline().parameters.last_fetched_date,pipeline().parameters.Back_Fill_date)}'",
-												"type": "Expression"
-											},
-											"queryTimeout": "02:00:00",
-											"partitionOption": "None"
-										},
-										"sink": {
-											"type": "AzureDatabricksDeltaLakeSink",
-											"importSettings": {
-												"type": "AzureDatabricksDeltaLakeImportCommand"
-											}
-										},
-										"enableStaging": true,
-										"stagingSettings": {
-											"linkedServiceName": {
-												"referenceName": "ADLSAnshAdv",
-												"type": "LinkedServiceReference"
-											},
-											"path": "landing/adf_staging"
-										}
-									},
-									"inputs": [
-										{
-											"referenceName": "ds_lookup_tbl_azure_sql_db",
-											"type": "DatasetReference",
-											"parameters": {
-												"schema_name": {
-													"value": "@pipeline().parameters.source_schema_name",
-													"type": "Expression"
-												},
-												"table_name": {
-													"value": "@pipeline().parameters.source_table_name",
-													"type": "Expression"
-												},
-												"database_name": {
-													"value": "@pipeline().parameters.database_name",
-													"type": "Expression"
-												}
-											}
-										}
-									],
-									"outputs": [
-										{
-											"referenceName": "ds_deltalaketable_databricks",
-											"type": "DatasetReference",
-											"parameters": {
-												"schema_name": {
-													"value": "@pipeline().parameters.target_schema_name",
-													"type": "Expression"
-												},
-												"table_name": {
-													"value": "@pipeline().parameters.target_table_name",
-													"type": "Expression"
-												}
-											}
-										}
-									]
-								},
-								{
-									"name": "Insert_INC_load_logs",
-									"type": "Lookup",
-									"dependsOn": [
-										{
-											"activity": "Incremental_copy_data",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"source": {
-											"type": "AzureDatabricksDeltaLakeSource",
-											"query": {
-												"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{pipeline().parameters.source_system}','@{pipeline().parameters.target_table_name}',@{activity('Incremental_copy_data').output.rowsCopied},'@{pipeline().parameters.watermark_column_name}', '@{utcNow()}')",
-												"type": "Expression"
-											}
-										},
-										"dataset": {
-											"referenceName": "ds_deltalaketable_databricks",
-											"type": "DatasetReference",
-											"parameters": {
-												"schema_name": "audit",
-												"table_name": "load_logs"
-											}
-										},
-										"firstRowOnly": false
-									}
-								}
-							]
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {}
-				},
-				"parameters": {
-					"totalCount": {
-						"type": "int",
-						"defaultValue": 0
-					},
-					"database_name": {
-						"type": "string"
-					},
-					"source_schema_name": {
-						"type": "string"
-					},
-					"source_table_name": {
-						"type": "string"
-					},
-					"target_schema_name": {
-						"type": "string"
-					},
-					"target_table_name": {
-						"type": "string"
-					},
-					"Back_Fill_date": {
-						"type": "string"
-					},
-					"watermark_column_name": {
-						"type": "string"
-					},
-					"last_fetched_date": {
-						"type": "string"
-					},
-					"source_system": {
-						"type": "string"
-					}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/ds_lookup_tbl_azure_sql_db')]",
-				"[concat(variables('factoryId'), '/datasets/ds_deltalaketable_databricks')]",
-				"[concat(variables('factoryId'), '/linkedServices/ADLSAnshAdv')]"
 			]
 		}
 	]
