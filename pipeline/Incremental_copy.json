@@ -110,7 +110,7 @@
 								"source": {
 									"type": "AzureDatabricksDeltaLakeSource",
 									"query": {
-										"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{pipeline().parameters.source_system}','@{pipeline().parameters.target_table_name}',@{activity('Incremental_copy_data').output.rowsCopied},'@{pipeline().parameters.watermark_column_name}', '@{utcNow()}')",
+										"value": "INSERT INTO audit.load_logs(source_system,tablename,numberofrowscopied,watermarkcolumnname,loaddate) values ('@{pipeline().parameters.source_system}','@{pipeline().parameters.target_insert_logs}',@{activity('Incremental_copy_data').output.rowsCopied},'@{pipeline().parameters.watermark_column_name}', '@{utcNow()}')",
 										"type": "Expression"
 									}
 								},
@@ -159,6 +159,9 @@
 				"type": "string"
 			},
 			"source_system": {
+				"type": "string"
+			},
+			"target_insert_logs": {
 				"type": "string"
 			}
 		},
