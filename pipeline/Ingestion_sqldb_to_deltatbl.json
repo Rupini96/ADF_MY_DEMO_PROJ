@@ -231,6 +231,10 @@
 												"source_system": {
 													"value": "@item().source_system",
 													"type": "Expression"
+												},
+												"target_insert_logs": {
+													"value": "@item().target_table",
+													"type": "Expression"
 												}
 											}
 										}
