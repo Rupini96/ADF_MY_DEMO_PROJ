@@ -56,9 +56,9 @@
 				}
 			}
 		],
-		"variables": {
+		"parameters": {
 			"trigger_identifier": {
-				"type": "String",
+				"type": "string",
 				"defaultValue": "gwr"
 			}
 		},
