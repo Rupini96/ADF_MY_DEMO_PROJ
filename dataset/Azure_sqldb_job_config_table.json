@@ -3,7 +3,10 @@
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "project_db_config",
-			"type": "LinkedServiceReference"
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"database_name": "project"
+			}
 		},
 		"annotations": [],
 		"type": "AzureSqlTable",
