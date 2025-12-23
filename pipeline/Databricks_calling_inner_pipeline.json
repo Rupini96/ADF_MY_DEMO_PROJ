@@ -52,7 +52,14 @@
 						{
 							"name": "Notebook",
 							"type": "DatabricksNotebook",
-							"dependsOn": [],
+							"dependsOn": [
+								{
+									"activity": "LookupJobParameters",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
 							"policy": {
 								"timeout": "0.12:00:00",
 								"retry": 0,
@@ -65,11 +72,50 @@
 								"notebookPath": {
 									"value": "@item().Notebook_Path",
 									"type": "Expression"
+								},
+								"baseParameters": {
+									"job_identifier": {
+										"value": "@item().job_identifier",
+										"type": "Expression"
+									},
+									"job_config_json": {
+										"value": "@string(activity('LookupJobParameters').output.value)",
+										"type": "Expression"
+									}
 								}
 							},
 							"linkedServiceName": {
 								"referenceName": "AzureDatabricks",
 								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "LookupJobParameters",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT parameter_name, parameter_value\nFROM dbo.databricks_load_config\nWHERE job_identifier = '@{item().job_identifier}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "Azure_sqldb_job_config_table",
+									"type": "DatasetReference"
+								},
+								"firstRowOnly": false
 							}
 						}
 					]
